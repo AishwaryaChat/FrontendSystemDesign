@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Event Emitter</title>
+  </head>
+  <body>
+    <script>
+      var indexOf;
+      // *********** Function to find the index of passed listener in the list of listeners
+      if (typeof Array.prototype.indexOf === "function") {
+        indexOf = function (stack, listener) {
+          return stack.indexOf(listener);
+        };
+      } else {
+        indexOf = function (stack, listener) {
+          var index = -1;
+          var found = false;
+          var i = 0;
+          while (i < stack.length && !found) {
+            if (stack[i] === listener) {
+              index = i;
+              found = true;
+            }
+            i++;
+          }
+          return index;
+        };
+      }
+      var eventEmitter = function eventEmitter() {
+        this.events = {};
+      };
+      eventEmitter.prototype.on = function on(topic, listener) {
+        if (typeof this.events[topic] !== "object") {
+          this.events[topic] = [];
+        }
+        this.events[topic].push(listener);
+      };
+
+      eventEmitter.prototype.emit = function emit(topic, ...args) {
+        if (typeof this.events[topic] === "object") {
+          var listeners = this.events[topic];
+          for (let i = 0; i < listeners.length; i++) {
+            listeners[i].apply(this, args);
+          }
+          return true;
+        }
+        return false;
+      };
+
+      eventEmitter.prototype.off = function off(topic, listener) {
+        if (typeof this.events[topic] === "object") {
+          let listenerIndex = indexOf(this.events[topic], listener);
+          if (listenerIndex !== -1) {
+            this.events[topic].splice(listenerIndex, 1);
+          }
+        }
+      };
+
+      eventEmitter.prototype.once = function (event, listener) {
+        this.on(event, function callOnce() {
+          this.off(event, callOnce);
+          listener.apply(this, arguments);
+        });
+      };
+
+      function responseToEvent(msg) {
+        console.log(msg);
+      }
+      let EventEmitter = new eventEmitter();
+      EventEmitter.on("pramp", responseToEvent);
+      EventEmitter.emit("pramp", "1st");
+      EventEmitter.emit("pramp", "2nd");
+      EventEmitter.once("pramp", function (msg) {
+        console.log(msg + " just once!");
+      });
+      EventEmitter.off("pramp", responseToEvent);
+      EventEmitter.emit("pramp", "3rd");
+      EventEmitter.emit("pramp", "1st");
+    </script>
+  </body>
+</html>
